@@ -7,13 +7,17 @@ import csv
 import textwrap
 import platform
 
-Tkinter.Tk().withdraw()
+root = Tkinter.Tk()
+root.withdraw()
+root.update()
 INPUT_CSV_PATH = tkFileDialog.askopenfilename(
     title="please select the csv file")
 # INPUT_CSV_PATH = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/test.csv'
 
+root.update()
 OUTPUT_DIR = tkFileDialog.askdirectory(title="please select output folder")
 
+root.update()
 # OUTPUT_DIR = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/testfolder'
 
 # print INPUT_CSV_PATH, OUTPUT_DIR
