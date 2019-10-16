@@ -170,10 +170,8 @@ with open(INPUT_CSV_PATH, 'r') as csvfile:
         newbi = Image.new('RGB', (newwidth+60, newheight+60), 'white')
         newbi.paste(bi, (30, 30))
 
-        name = row['Image Name'].lower().rstrip(".tiff")
-        name = name.rstrip(".tif")
-        name = name.rstrip(".jpeg")
-        name = name.rstrip(".jpg")
+        name = row['Image Name'].replace(".tiff", "").replace(".TIFF", "").replace(
+            ".TIF", "").replace(".JPEG", "").replace(".JPG", "").replace(".jpeg", "").replace(".jpg", "")
 
         try:
             os.makedirs(OUTPUT_DIR + "/jpg/")
@@ -187,6 +185,6 @@ with open(INPUT_CSV_PATH, 'r') as csvfile:
                 raise
         newbi.save(OUTPUT_DIR + "/jpg/" +
                    name + '.jpg', format='JPEG', quality=95)
-        newbi.save(OUTPUT_DIR + "/pdf/" +
-                   name + '.pdf', format='PDF', resoultion=100.0)
+        # newbi.save(OUTPUT_DIR + "/pdf/" +
+        #            name + '.pdf', format='PDF', resoultion=100.0)
         # newbi.show()
