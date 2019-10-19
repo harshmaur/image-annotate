@@ -173,18 +173,20 @@ with open(INPUT_CSV_PATH, 'r') as csvfile:
         name = row['Image Name'].replace(".tiff", "").replace(".TIFF", "").replace(
             ".TIF", "").replace(".JPEG", "").replace(".JPG", "").replace(".jpeg", "").replace(".jpg", "")
 
-        try:
-            os.makedirs(OUTPUT_DIR + "/jpg/")
-        except OSError:
-            if not os.path.isdir(OUTPUT_DIR + "/jpg/"):
-                raise
-        try:
-            os.makedirs(OUTPUT_DIR + "/pdf/")
-        except OSError:
-            if not os.path.isdir(OUTPUT_DIR + "/pdf/"):
-                raise
-        newbi.save(OUTPUT_DIR + "/jpg/" +
+        # try:
+        #     os.makedirs(OUTPUT_DIR + "/jpg/")
+        # except OSError:
+        #     if not os.path.isdir(OUTPUT_DIR + "/jpg/"):
+        #         raise
+        # try:
+        #     os.makedirs(OUTPUT_DIR + "/pdf/")
+        # except OSError:
+        #     if not os.path.isdir(OUTPUT_DIR + "/pdf/"):
+        #         raise
+        newbi.save(OUTPUT_DIR + "/" +
                    name + '.jpg', format='JPEG', quality=95)
+        # newbi.save(OUTPUT_DIR + "/jpg/" +
+        #            name + '.jpg', format='JPEG', quality=95)
         # newbi.save(OUTPUT_DIR + "/pdf/" +
         #            name + '.pdf', format='PDF', resoultion=100.0)
         # newbi.show()
