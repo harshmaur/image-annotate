@@ -125,9 +125,13 @@ with open(INPUT_CSV_PATH, 'r') as csvfile:
         img = Image.open(INPUT_CSV_PATH.replace(
             os.path.basename(INPUT_CSV_PATH), '')+row['Image Name'])
         img = trim(img)
-        maxsize = (3000, 3000)
-        img.thumbnail(maxsize, Image.ANTIALIAS)
+
+        maxsize = (
+            3000, int((float(img.size[1])*float(3000/float(img.size[0])))))
+        img = img.resize(maxsize, Image.ANTIALIAS)
+        img.thumbnail((3000, 3000), Image.ANTIALIAS)
         width, height = img.size
+
         bi = Image.new('RGB', (3500, 3500), 'white')
         bi.paste(img, (30, 200))
         footercaption = row.get('Footer')
