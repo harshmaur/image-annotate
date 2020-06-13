@@ -134,11 +134,8 @@ with open(INPUT_CSV_PATH, 'r') as csvfile:
 
         bi = Image.new('RGB', (3500, 3500), 'white')
         bi.paste(img, (30, 200))
-        footercaption = row.get('Footer')
-        tname = row.get('Image Name', '').lower().rstrip(".tiff")
-        tname = tname.rstrip(".tif")
-        tname = tname.rstrip(".jpeg")
-        tname = tname.rstrip(".jpg")
+        footercaption = row.get('Footer') 
+        tname = ".".join(row.get('Image Name', '').split(".")[:-1]) # splittling, then joining to get back name
         headercaption = []
         headercaption.append(row.get('Category', ''))
         headercaption.append(row.get('Almirah Loc', '') +
