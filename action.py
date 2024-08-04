@@ -157,7 +157,7 @@ with open(INPUT_CSV_PATH, 'r', encoding="utf-8-sig") as csvfile:
         newbi.paste(bi, (30, 30))
 
         name = row['Image Name'].replace(".tiff", "").replace(".TIFF", "").replace(
-            ".TIF", "").replace(".JPEG", "").replace(".JPG", "").replace(".jpeg", "").replace(".jpg", "")
+            ".TIF", "").replace(".JPEG", "").replace(".JPG", "").replace(".jpeg", "").replace(".jpg", "").replace(".webp", "")
 
         # try:
         #     os.makedirs(OUTPUT_DIR + "/jpg/")
