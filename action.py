@@ -1,21 +1,20 @@
 from PIL import Image, ImageDraw, ImageFont, ImageChops, ImageOps
 
-import Tkinter
-import tkFileDialog
+import tkinter
+from tkinter import filedialog
 import os
 import csv
-import textwrap
 import platform
 
-root = Tkinter.Tk()
+root = tkinter.Tk()
 root.withdraw()
 root.update()
-INPUT_CSV_PATH = tkFileDialog.askopenfilename(
+INPUT_CSV_PATH = filedialog.askopenfilename(
     title="please select the csv file")
 # INPUT_CSV_PATH = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/test.csv'
 
 root.update()
-OUTPUT_DIR = tkFileDialog.askdirectory(title="please select output folder")
+OUTPUT_DIR = filedialog.askdirectory(title="please select output folder")
 
 root.update()
 # OUTPUT_DIR = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/testfolder'
@@ -45,16 +44,11 @@ class TextWrapper(object):
             )
         )
 
-        self.space_width = self.draw.textsize(
-            text=' ',
-            font=self.font
-        )[0]
+        self.space_width = self.get_text_width(' ')
 
     def get_text_width(self, text):
-        return self.draw.textsize(
-            text=text,
-            font=self.font
-        )[0]
+        bbox = self.draw.textbbox((0, 0), text, font=self.font)
+        return bbox[2] - bbox[0]
 
     def wrapped_text(self):
         wrapped_lines = []
@@ -97,15 +91,13 @@ def get_font(image, text, font_path, img_width_fraction):
         img_width_fraction (float): Fraction of image's width that text's width should be.
 
     Returns:
-        ImageFont.Font: Font to draw text with.
+        ImageFont.FreeTypeFont: Font to draw text with.
     """
     width, height = image.size
     font_size = 50
     font = ImageFont.truetype(font_path, font_size)
-    # +1 is to ensure font size is below requirement
-    while (font.getsize(text)[0]+1) < img_width_fraction*width and font_size < 60:
+    while (font.getbbox(text)[2] - font.getbbox(text)[0] + 1) < img_width_fraction * width and font_size < 60:
         font_size += 1
-        # print font_size
         font = ImageFont.truetype(font_path, font_size)
     return font
 
@@ -119,51 +111,44 @@ def trim(im):
         return im.crop(bbox)
 
 
-with open(INPUT_CSV_PATH, 'r') as csvfile:
+with open(INPUT_CSV_PATH, 'r', encoding="utf-8-sig") as csvfile:
     spamreader = csv.DictReader(csvfile)
     for row in spamreader:
+        print(row)
         img = Image.open(INPUT_CSV_PATH.replace(
             os.path.basename(INPUT_CSV_PATH), '')+row['Image Name'])
         img = trim(img)
 
         maxsize = (
             3000, int((float(img.size[1])*float(3000/float(img.size[0])))))
-        img = img.resize(maxsize, Image.ANTIALIAS)
-        img.thumbnail((3000, 3000), Image.ANTIALIAS)
+        img = img.resize(maxsize, Image.LANCZOS)
+        img.thumbnail((3000, 3000), Image.LANCZOS)
         width, height = img.size
 
         bi = Image.new('RGB', (3500, 3500), 'white')
         bi.paste(img, (30, 200))
-        footercaption = row.get('Footer') 
-        tname = ".".join(row.get('Image Name', '').split(".")[:-1]) # splittling, then joining to get back name
-        headercaption = []
-        headercaption.append(row.get('Category', ''))
-        headercaption.append(row.get('Almirah Loc', '') +
-                             '-'+row.get('Accession Number', ''))
-        headercaption.append(tname)
-        headercaption.append(row.get('Book Name', ''))
-        headercaption.append(row.get('Author', ''))
-        headercaption = "/".join(list(filter(None, headercaption)))
-        print headercaption
-        if(platform.system() == 'Darwin'):
-            font = get_font(img, headercaption,
+        footercaption = row.get('Footer')
+        # splittling, then joining to get back name
+        tname = ".".join(row.get('Image Name', '').split(".")[:-1])
+
+        if (platform.system() == 'Darwin'):
+            font = get_font(img, footercaption,
                             '/Library/Fonts/Arial.ttf', 0.8)
+        elif (platform.system() == 'Windows'):
+            font = get_font(img, footercaption,
+                            r'C:\Windows\Fonts\Arial.ttf', 0.8)
+        elif (platform.system() == 'Linux'):
+            font = get_font(img, footercaption,
+                            '/usr/share/fonts/truetype/freefont/FreeSans.ttf', 0.8)
         else:
-            font = get_font(img, headercaption,
-                            'C:\Windows\Fonts\Arial.ttf', 0.8)
+            font = get_font(img, footercaption,
+                            r'C:\Windows\Fonts\Arial.ttf', 0.8)
         draw = ImageDraw.Draw(bi)
         wrapped_footer_text = TextWrapper(
             footercaption, font, width).wrapped_text()
-        wrapped_header_text = TextWrapper(
-            headercaption, font, width).wrapped_text()
 
         draw.text((30, height+200), wrapped_footer_text,
                   font=font, fill="black")
-
-        startheight = 100/len(wrapped_header_text.splitlines())
-
-        draw.text((30, startheight), wrapped_header_text,
-                  font=font, fill='black')
 
         bi = trim(bi)
 
