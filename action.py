@@ -1,98 +1,11 @@
-from PIL import Image, ImageDraw, ImageFont, ImageChops, ImageOps
-
-import tkinter
-from tkinter import filedialog
+from PIL import Image, ImageDraw, ImageFont, ImageChops
+import tkinter as tk
+from tkinter import filedialog, simpledialog, messagebox
 import os
-import csv
 import platform
-
-root = tkinter.Tk()
-root.withdraw()
-root.update()
-INPUT_CSV_PATH = filedialog.askopenfilename(
-    title="please select the csv file")
-# INPUT_CSV_PATH = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/test.csv'
-
-root.update()
-OUTPUT_DIR = filedialog.askdirectory(title="please select output folder")
-
-root.update()
-# OUTPUT_DIR = '/Users/harshmaur/Downloads/2A-87 Western Architecture - Final/testfolder'
-
-# print INPUT_CSV_PATH, OUTPUT_DIR
-
-
-class TextWrapper(object):
-    """ Helper class to wrap text in lines, based on given text, font
-        and max allowed line width.
-    """
-
-    def __init__(self, text, font, max_width):
-        self.text = text
-        self.text_lines = [
-            ' '.join([w.strip() for w in l.split(' ') if w])
-            for l in text.split('\n')
-            if l
-        ]
-        self.font = font
-        self.max_width = max_width
-
-        self.draw = ImageDraw.Draw(
-            Image.new(
-                mode='RGB',
-                size=(100, 100)
-            )
-        )
-
-        self.space_width = self.get_text_width(' ')
-
-    def get_text_width(self, text):
-        bbox = self.draw.textbbox((0, 0), text, font=self.font)
-        return bbox[2] - bbox[0]
-
-    def wrapped_text(self):
-        wrapped_lines = []
-        buf = []
-        buf_width = 0
-
-        for line in self.text_lines:
-            for word in line.split(' '):
-                word_width = self.get_text_width(word)
-
-                expected_width = word_width if not buf else \
-                    buf_width + self.space_width + word_width
-
-                if expected_width <= self.max_width:
-                    # word fits in line
-                    buf_width = expected_width
-                    buf.append(word)
-                else:
-                    # word doesn't fit in line
-                    wrapped_lines.append(' '.join(buf))
-                    buf = [word]
-                    buf_width = word_width
-
-            if buf:
-                wrapped_lines.append(' '.join(buf))
-                buf = []
-                buf_width = 0
-
-        return '\n'.join(wrapped_lines)
 
 
 def get_font(image, text, font_path, img_width_fraction):
-    """
-    Get desired font for image.
-
-    Args:
-        image (Image.Image): Image being drawn on.
-        text (str): Text being drawn.
-        font_path (str): Path to font.
-        img_width_fraction (float): Fraction of image's width that text's width should be.
-
-    Returns:
-        ImageFont.FreeTypeFont: Font to draw text with.
-    """
     width, height = image.size
     font_size = 50
     font = ImageFont.truetype(font_path, font_size)
@@ -111,68 +24,129 @@ def trim(im):
         return im.crop(bbox)
 
 
-with open(INPUT_CSV_PATH, 'r', encoding="utf-8-sig") as csvfile:
-    spamreader = csv.DictReader(csvfile)
-    for row in spamreader:
-        print(row)
-        img = Image.open(INPUT_CSV_PATH.replace(
-            os.path.basename(INPUT_CSV_PATH), '')+row['Image Name'])
-        img = trim(img)
+class TextWrapper:
+    def __init__(self, text, font, max_width):
+        self.text = text
+        self.text_lines = [' '.join(
+            [w.strip() for w in l.split(' ') if w]) for l in text.split('\n') if l]
+        self.font = font
+        self.max_width = max_width
+        self.draw = ImageDraw.Draw(Image.new('RGB', (100, 100)))
+        self.space_width = self.get_text_width(' ')
 
-        maxsize = (
-            3000, int((float(img.size[1])*float(3000/float(img.size[0])))))
-        img = img.resize(maxsize, Image.LANCZOS)
-        img.thumbnail((3000, 3000), Image.LANCZOS)
-        width, height = img.size
+    def get_text_width(self, text):
+        bbox = self.draw.textbbox((0, 0), text, font=self.font)
+        return bbox[2] - bbox[0]
 
-        bi = Image.new('RGB', (3500, 3500), 'white')
-        bi.paste(img, (30, 200))
-        footercaption = row.get('Footer')
-        # splittling, then joining to get back name
-        tname = ".".join(row.get('Image Name', '').split(".")[:-1])
+    def wrapped_text(self):
+        wrapped_lines = []
+        buf = []
+        buf_width = 0
+        for line in self.text_lines:
+            for word in line.split(' '):
+                word_width = self.get_text_width(word)
+                expected_width = word_width if not buf else buf_width + self.space_width + word_width
+                if expected_width <= self.max_width:
+                    buf_width = expected_width
+                    buf.append(word)
+                else:
+                    wrapped_lines.append(' '.join(buf))
+                    buf = [word]
+                    buf_width = word_width
+            if buf:
+                wrapped_lines.append(' '.join(buf))
+                buf = []
+                buf_width = 0
+        return wrapped_lines
 
-        if (platform.system() == 'Darwin'):
-            font = get_font(img, footercaption,
-                            '/Library/Fonts/Arial.ttf', 0.8)
-        elif (platform.system() == 'Windows'):
-            font = get_font(img, footercaption,
-                            r'C:\Windows\Fonts\Arial.ttf', 0.8)
-        elif (platform.system() == 'Linux'):
-            font = get_font(img, footercaption,
-                            '/usr/share/fonts/truetype/freefont/FreeSans.ttf', 0.8)
-        else:
-            font = get_font(img, footercaption,
-                            r'C:\Windows\Fonts\Arial.ttf', 0.8)
-        draw = ImageDraw.Draw(bi)
-        wrapped_footer_text = TextWrapper(
-            footercaption, font, width).wrapped_text()
 
-        draw.text((30, height+200), wrapped_footer_text,
-                  font=font, fill="black")
+def process_image(image_path, footer_text):
+    img = Image.open(image_path)
+    img = trim(img)
 
-        bi = trim(bi)
+    maxsize = (3000, int((float(img.size[1])*float(3000/float(img.size[0])))))
+    img = img.resize(maxsize, Image.LANCZOS)
+    img.thumbnail((3000, 3000), Image.LANCZOS)
+    width, height = img.size
 
-        newwidth, newheight = bi.size
-        newbi = Image.new('RGB', (newwidth+60, newheight+60), 'white')
-        newbi.paste(bi, (30, 30))
+    bi = Image.new('RGB', (3500, 3500), 'white')
+    bi.paste(img, (30, 200))
 
-        name = row['Image Name'].replace(".tiff", "").replace(".TIFF", "").replace(
-            ".TIF", "").replace(".JPEG", "").replace(".JPG", "").replace(".jpeg", "").replace(".jpg", "").replace(".webp", "")
+    if platform.system() == 'Darwin':
+        font_path = '/Library/Fonts/Arial.ttf'
+    elif platform.system() == 'Windows':
+        font_path = r'C:\Windows\Fonts\Arial.ttf'
+    elif platform.system() == 'Linux':
+        font_path = '/usr/share/fonts/truetype/freefont/FreeSans.ttf'
+    else:
+        font_path = r'C:\Windows\Fonts\Arial.ttf'
 
-        # try:
-        #     os.makedirs(OUTPUT_DIR + "/jpg/")
-        # except OSError:
-        #     if not os.path.isdir(OUTPUT_DIR + "/jpg/"):
-        #         raise
-        # try:
-        #     os.makedirs(OUTPUT_DIR + "/pdf/")
-        # except OSError:
-        #     if not os.path.isdir(OUTPUT_DIR + "/pdf/"):
-        #         raise
-        newbi.save(OUTPUT_DIR + "/" +
-                   name + '.jpg', format='JPEG', quality=95)
-        # newbi.save(OUTPUT_DIR + "/jpg/" +
-        #            name + '.jpg', format='JPEG', quality=95)
-        # newbi.save(OUTPUT_DIR + "/pdf/" +
-        #            name + '.pdf', format='PDF', resoultion=100.0)
-        # newbi.show()
+    font = get_font(img, footer_text, font_path, 0.8)
+    draw = ImageDraw.Draw(bi)
+    wrapped_footer_lines = TextWrapper(footer_text, font, width).wrapped_text()
+
+    line_height = font.getbbox('A')[3] - font.getbbox('A')[1]
+    total_text_height = len(wrapped_footer_lines) * line_height
+
+    y = height + 200
+
+    for line in wrapped_footer_lines:
+        line_width = draw.textbbox((0, 0), line, font=font)[2]
+        x = (width - line_width) // 2 + 30
+
+        draw.text((x, y), line, font=font, fill="black")
+        y += line_height
+
+    bi = trim(bi)
+
+    newwidth, newheight = bi.size
+    newbi = Image.new('RGB', (newwidth+60, newheight+60), 'white')
+    newbi.paste(bi, (30, 30))
+
+    return newbi
+
+
+def process_batch():
+    # Select multiple image files
+    image_paths = filedialog.askopenfilenames(title="Select image files", filetypes=[
+                                              ("Image files", "*.jpg *.jpeg *.png *.tiff *.tif")])
+
+    if not image_paths:
+        print("No images selected.")
+        return False
+
+    # Get footer text from user
+    footer_text = simpledialog.askstring("Input", "Enter the footer text:")
+
+    if footer_text is None:
+        print("No footer text entered.")
+        return False
+
+    # Process each image
+    for image_path in image_paths:
+        processed_image = process_image(image_path, footer_text)
+
+        # Overwrite the original image
+        processed_image.save(image_path, format='JPEG', quality=95)
+        print(f"Processed and overwritten: {image_path}")
+
+    print("All images in this batch have been processed and overwritten.")
+    return True
+
+
+def main():
+    root = tk.Tk()
+    root.withdraw()
+
+    while True:
+        if not process_batch():
+            break
+
+        if not messagebox.askyesno("Continue?", "Do you want to process another batch of images?"):
+            break
+
+    print("Image processing completed. Exiting.")
+
+
+if __name__ == "__main__":
+    main()
