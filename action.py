@@ -16,12 +16,26 @@ def get_font(image, text, font_path, img_width_fraction):
 
 
 def trim(im):
-    bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
+    print("Entering trim function")
+    if im.mode == 'RGBA':
+        # Create a white background image
+        bg = Image.new('RGBA', im.size, (255, 255, 255, 255))
+        # Paste the image on the background using alpha compositing
+        im = Image.alpha_composite(bg, im)
+        im = im.convert('RGB')
+        print("Converted RGBA to RGB")
+    
+    bg = Image.new(im.mode, im.size, im.getpixel((0,0)))
     diff = ImageChops.difference(im, bg)
-    diff = ImageChops.add(diff, diff)
+    diff = ImageChops.add(diff, diff, 2.0, -100)
     bbox = diff.getbbox()
     if bbox:
+        print(f"Trimming image to bbox: {bbox}")
         return im.crop(bbox)
+    else:
+        print("No trimming needed")
+        return im
+
 
 
 class TextWrapper:
@@ -137,25 +151,30 @@ def process_batch():
 
 def main():
     root = tk.Tk()
-    root.title("Image Annotate")
-    root.geometry("900x700")  # Increased window size for better aesthetics
+    root.withdraw()  # Hide the root window
+    show_splash_screen(root)
+
+def show_splash_screen(root):
+    splash = tk.Toplevel(root)
+    splash.title("Image Annotate")
+    splash.geometry("900x700")
 
     # Center the window on the primary screen
-    root.update_idletasks()
-    width = root.winfo_width()
-    height = root.winfo_height()
-    x = (root.winfo_screenwidth() // 2) - (width // 2)
-    y = (root.winfo_screenheight() // 2) - (height // 2)
-    root.geometry(f'{width}x{height}+{x}+{y}')
-    root.attributes('-topmost', True)
-    root.update()
-    root.attributes('-topmost', False)
+    splash.update_idletasks()
+    width = splash.winfo_width()
+    height = splash.winfo_height()
+    x = (splash.winfo_screenwidth() // 2) - (width // 2)
+    y = (splash.winfo_screenheight() // 2) - (height // 2)
+    splash.geometry(f'{width}x{height}+{x}+{y}')
+    splash.attributes('-topmost', True)
+    splash.update()
+    splash.attributes('-topmost', False)
 
     # Set a background color
-    root.configure(bg="#e6f3ff")
+    splash.configure(bg="#e6f3ff")
 
     # Create a frame to center the content with a light blue background
-    center_frame = tk.Frame(root, bg="#e6f3ff", padx=40, pady=40)
+    center_frame = tk.Frame(splash, bg="#e6f3ff", padx=40, pady=40)
     center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     # Create and pack widgets with improved styling
@@ -171,8 +190,8 @@ def main():
     creator_label.pack(pady=30)
 
     def start_and_close():
-        root.destroy()  # Close the splash screen
-        start_processing()  # Start the processing
+        splash.destroy()  # Close the splash screen
+        root.after(100, start_processing, root)  
 
     start_button = tk.Button(center_frame, text="Start", command=start_and_close,
                              font=("Helvetica", 16, "bold"), padx=30, pady=15,
@@ -184,9 +203,11 @@ def main():
     start_button.bind("<Enter>", lambda e: e.widget.config(bg="#45a049"))
     start_button.bind("<Leave>", lambda e: e.widget.config(bg="#4CAF50"))
 
+    splash.protocol("WM_DELETE_WINDOW", root.quit)  # Ensure app quits if splash is closed
     root.mainloop()
 
-def start_processing():
+
+def start_processing(root):
     while True:
         if not process_batch():
             break
@@ -195,6 +216,8 @@ def start_processing():
             break
 
     print("Image processing completed. Exiting.")
+    root.quit()  # Ensure the mainloop stops
+    root.destroy()  # Destroy the root window
 
 
 if __name__ == "__main__":
