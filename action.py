@@ -109,14 +109,15 @@ def process_image(image_path, footer_text):
 def process_batch():
     # Select multiple image files
     image_paths = filedialog.askopenfilenames(title="Select image files", filetypes=[
-                                              ("Image files", "*.jpg *.jpeg *.png *.tiff *.tif")])
+                                              ("Image files", "*.jpg *.jpeg *.png *.tiff *.tif *.bmp *.tbm")])
 
     if not image_paths:
         print("No images selected.")
         return False
 
     # Get footer text from user
-    footer_text = simpledialog.askstring("Input", "Enter the footer text:")
+    default_footer = os.path.basename(os.path.dirname(image_paths[0]))
+    footer_text = simpledialog.askstring("Input", "Enter the footer text:\t\t\t\t\t\t\t\t", initialvalue=default_footer)
 
     if footer_text is None:
         print("No footer text entered.")
@@ -136,8 +137,56 @@ def process_batch():
 
 def main():
     root = tk.Tk()
-    root.withdraw()
+    root.title("Image Annotate")
+    root.geometry("900x700")  # Increased window size for better aesthetics
 
+    # Center the window on the primary screen
+    root.update_idletasks()
+    width = root.winfo_width()
+    height = root.winfo_height()
+    x = (root.winfo_screenwidth() // 2) - (width // 2)
+    y = (root.winfo_screenheight() // 2) - (height // 2)
+    root.geometry(f'{width}x{height}+{x}+{y}')
+    root.attributes('-topmost', True)
+    root.update()
+    root.attributes('-topmost', False)
+
+    # Set a background color
+    root.configure(bg="#e6f3ff")
+
+    # Create a frame to center the content with a light blue background
+    center_frame = tk.Frame(root, bg="#e6f3ff", padx=40, pady=40)
+    center_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    # Create and pack widgets with improved styling
+    title_label = tk.Label(center_frame, text="Image Annotate", font=("Helvetica", 32, "bold"), bg="#e6f3ff", fg="#333333")
+    title_label.pack(pady=30)
+
+    description_label = tk.Label(center_frame, text="Bulk add text at the bottom of the images\nwith white border",
+                                 wraplength=600, font=("Helvetica", 16), bg="#e6f3ff", fg="#555555")
+    description_label.pack(pady=20)
+
+    creator_label = tk.Label(center_frame, text="Created by - Harsh Maur", font=("Helvetica", 14, "italic"),
+                             bg="#e6f3ff", fg="#777777")
+    creator_label.pack(pady=30)
+
+    def start_and_close():
+        root.destroy()  # Close the splash screen
+        start_processing()  # Start the processing
+
+    start_button = tk.Button(center_frame, text="Start", command=start_and_close,
+                             font=("Helvetica", 16, "bold"), padx=30, pady=15,
+                             bg="#4CAF50", fg="white", activebackground="#45a049",
+                             relief=tk.RAISED, bd=0)
+    start_button.pack(pady=40)
+
+    # Add hover effect to the button
+    start_button.bind("<Enter>", lambda e: e.widget.config(bg="#45a049"))
+    start_button.bind("<Leave>", lambda e: e.widget.config(bg="#4CAF50"))
+
+    root.mainloop()
+
+def start_processing():
     while True:
         if not process_batch():
             break
