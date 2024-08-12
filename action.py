@@ -122,8 +122,7 @@ def process_image(image_path, footer_text):
 
 def process_batch():
     # Select multiple image files
-    image_paths = filedialog.askopenfilenames(title="Select image files", filetypes=[
-                                              ("Image files", "*.jpg *.jpeg *.png *.tiff *.tif *.bmp *.tbm")])
+    image_paths = custom_filedialog("Select image files", [("Image files", "*.jpg *.jpeg *.png *.tiff *.tif *.bmp *.tbm")])
 
     if not image_paths:
         print("No images selected.")
@@ -131,7 +130,7 @@ def process_batch():
 
     # Get footer text from user
     default_footer = os.path.basename(os.path.dirname(image_paths[0]))
-    footer_text = simpledialog.askstring("Input", "Enter the footer text:\t\t\t\t\t\t\t\t", initialvalue=default_footer)
+    footer_text = custom_simpledialog("Input", "Enter the footer text:\t\t\t\t\t\t\t\t", initialvalue=default_footer)
 
     if footer_text is None:
         print("No footer text entered.")
@@ -154,21 +153,48 @@ def main():
     root.withdraw()  # Hide the root window
     show_splash_screen(root)
 
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    print("Window width", width)
+    height = window.winfo_height()
+    print("Window height", height)
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    print("x",x)
+    print("y",y)
+    window.geometry(f'+{x}+{y}')
+
+def custom_filedialog(title, filetypes):
+    root = tk.Tk()
+    root.withdraw()
+    root.geometry("700x500")
+    
+    # Position the file dialog
+    center_window(root)
+    
+    paths = filedialog.askopenfilenames(title=title, filetypes=filetypes, parent=root)
+    root.destroy()
+    return paths
+
+def custom_simpledialog(title, prompt, initialvalue):
+    root = tk.Tk()
+    root.withdraw()
+
+    root.geometry("500x100")
+    
+    center_window(root)
+
+    value = simpledialog.askstring(title, prompt, initialvalue=initialvalue, parent=root)
+    root.destroy()
+    return value
+
 def show_splash_screen(root):
     splash = tk.Toplevel(root)
     splash.title("Image Annotate")
     splash.geometry("900x700")
 
-    # Center the window on the primary screen
-    splash.update_idletasks()
-    width = splash.winfo_width()
-    height = splash.winfo_height()
-    x = (splash.winfo_screenwidth() // 2) - (width // 2)
-    y = (splash.winfo_screenheight() // 2) - (height // 2)
-    splash.geometry(f'{width}x{height}+{x}+{y}')
-    splash.attributes('-topmost', True)
-    splash.update()
-    splash.attributes('-topmost', False)
+    center_window(splash)
 
     # Set a background color
     splash.configure(bg="#e6f3ff")
@@ -212,12 +238,18 @@ def start_processing(root):
         if not process_batch():
             break
 
-        if not messagebox.askyesno("Continue?", "Do you want to process another batch of images?"):
+        dialog_root = tk.Tk()
+        dialog_root.withdraw()
+        center_window(dialog_root)
+        if not messagebox.askyesno("Continue?", "Do you want to process another batch of images?", parent=dialog_root):
+            dialog_root.destroy()
             break
+        dialog_root.destroy()
 
     print("Image processing completed. Exiting.")
-    root.quit()  # Ensure the mainloop stops
-    root.destroy()  # Destroy the root window
+    root.quit()
+    root.destroy()
+
 
 
 if __name__ == "__main__":
